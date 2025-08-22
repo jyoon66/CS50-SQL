@@ -156,3 +156,184 @@ SELECT "title", "translator"
 FROM "longlist"
 WHERE "translator" IS NOT NULL;
 ```
+
+### `LIKE`
+* This keyword is used to select data that roughly matches the specified string. For example `LIKE` could be used to select books that have a certain word or phrase in their title.
+* `LIKE` is combined with the operators `%` (matches any characters around a given string) and `_` (matches a single character).
+* To select the books with the word "love" in their titles, we can run 
+```sql
+SELECT "title"
+FROM "longlist"
+WHERE "title" LIKE '%love%';
+```
+  * `%` matches 0 or more characters, so this query would match book titles that have 0 or more characters before and after "love" -- that is, titles that contain "love".
+* To select the books whose title begin with "The", we can run 
+```sql
+SELECT "title"
+FROM "longlist"
+WHERE "title" LIKE 'The%';
+```
+* The above query may also return books whose title begin with "Their" or "They". To select only the books whose titles begin with the **word** "The", we can add a space.
+```sql
+SELECT "title"
+FROM "longlist"
+WHERE "title" LIKE 'The %';
+```
+* Given that there is a book in the table whose name is either "Pyre" or "Pire", we can select it by running
+```sql
+SELECT "title"
+FROM "longlist"
+WHERE "title" LIKE 'P_re';
+```
+ * This query could also return book titles like "Pore" or "Pure" if they existed in our database, because `_` matches any single character.
+
+### Questions
+> Can we use multiple `%` or `_` symbols in a query?
+* Yes, we can! Example 1: if we wanted to select books whose titles begin with "The" and have "love" somewhere in the middle, we could run
+```sql
+SELECT "title"
+FROM "longlist"
+WHERE "title" LIKE 'The%love%';
+```
+* Note: No book from our current database matches this pattern, so this query returns nothing.
+* Example 2: If we knew there was a book in the table whose title begins with "T" and has four letters in it, we can try to find it by running
+```sql
+SELECT "title"
+FROM "longlist"
+WHERE "title" LIKE 'T____'; 
+```
+> Is the comparison of strings case-sensitive in SQL?
+* In SQLite, comparison of strings with `LIKE` is by default case-insensitive, whereas comparison of strings with `=` is case-sensitive. (Note that, in other DBMS's, the configuration of your database can change this!)
+
+### Ranges
+* We can also use the operators `<`, `>`, `<=` and `>=` in our conditions to match a range of values. For example, to select all the books longlisted between the years 2019 and 2022 (inclusive), we can run
+```sql
+SELECT "title", "author"
+FROM "longlist"
+WHERE "year" >= BETWEEN 2019 AND 2022;
+```
+* Another way to get the same results is using the keywords `BETWEEN` and `AND` to specify inclusive ranges. We can run
+```sql
+SELECT "title", "author"
+FROM "longlist"
+WHERE "year" BETWEEN 2019 AND 2022;
+```
+* To select the books that have a rating of 4.0 or higher, we can run
+```sql
+SELECT "title", "rating"
+FROM "longlist"
+WHERE "rating" > 4.0;
+```
+* To further limit the selected books by number of votes, and have only those books with at least 10,000 votes, we can run
+```sql
+SELECT "title", "rating", "votes"
+FROM "longlist"
+WHERE "rating" > 4.0 AND "votes" > 10000;
+```
+* To select the books that have less than 300 pages, we can run
+```sql
+SELECT "title", "pages"
+FROM "longlist"
+WHERE "pages" < 300;
+```
+
+### Questions
+> For range operators like `<` and `>`, do the values in the database have to be integers?
+* No, the values can be integers or floating-point (i.e., "decimal" or "real") numbers. While creating a database, there are ways to set these data types for columns.
+
+### `ORDER BY`
+* The `ORDER BY` keyword allows us to organize the returned rows in some specified order.
+* The following query selects the bottom 10 books in our database by rating.
+```sql
+SELECT "title", "rating"
+FROM "longlist"
+ORDER BY "rating" LIMIT 10;
+```
+* Note that we get the bottom 10 books because `ORDER BY` chooses ascending order by default.
+* Instead, to select the top 10 books
+```sql
+SELECT "title", "rating"
+FROM "longlist"
+ORDER BY "rating" DESC LIMIT 10;
+```
+  * Note the use of the SQL keyword `DESC` to specify the descending order. `ASC` can be used to explicitly specify ascending order.
+* To select the top 10 books by rating and also include number of votes as a tie-break, we can run
+```sql
+SELECT "title", "rating", "votes"
+FROM "longlist"
+ORDER BY "rating" DESC, "votes" DESC
+LIMIT 10;
+```
+* Note that for each column in the `ORDER BY` clause, we specify ascending or descending order.
+
+### Questions
+> To sort books by title alphabetically, can we use `ORDER BY`?
+* Yes, we can. The query would be
+```sql
+SELECT "title"
+FROM "longlist"
+ORDER BY "title";
+```
+
+### Aggregate Functions
+* `COUNT`, `AVG`, `MIN`, `MAX`, and `SUM` are called aggregate functions and allow us to perform the corresponding operations over multiple rows of data. By their very nature, each of the following aggregate functions will return only a single output -- the aggregated value.
+* To find the average rating of all books in the database
+```sql
+SELECT AVG("rating")
+FROM "longlist";
+```
+* To round the average rating to 2 decimal points
+```sql
+SELECT ROUND(AVG("rating"), 2)
+FROM "longlist";
+```
+* To rename the column in which the results are displayed
+```SELECT ROUND(AVG("rating"), 2) AS "average rating"
+FROM "longlist";
+```
+* Note the use of the SQL keyword `AS` to rename columns.
+* To select the maximum rating in the database
+```sql
+SELECT MAX("rating")
+FROM "longlist";
+```
+* To select the minimum rating in the database
+```sql
+SELECT MIN("rating")
+FROM "longlist";
+```
+* To count the total number of votes in the database
+```sql
+SELECT SUM("votes")
+FROM "longlist";
+```
+* To count the number of books in our database
+```sql
+SELECT COUNT(*)
+FROM "longlist";
+```
+  * Remember that we used `*` to select every row and column from the database. In this case, we are trying to count every row in the database and hence we use the `*`.
+* To count the number of translators
+```sql
+SELECT COUNT("translator")
+FROM "longlist";
+```
+  * We observe that the number of translators is fewer than the number of rows in the database. This is because the `COUNT` function does not count `NULL` values.
+* To count the number of publishers in the database
+```sql
+SELECT COUNT("publisher")
+FROM "longlist";
+```
+* As with translators, this query will count the number of publisher values that are not `NULL`. However, this may include duplicates. Another SQL keyword, `DISTINCT`, can be used to ensure that only distinct values are counted.
+```sql
+SELECT COUNT(DISTINCT "publisher")
+FROM "longlist";
+```
+
+### Questions
+> Would using `MAX` with the title column give you the longest book title?
+* No, using `MAX` with the title column would give the "largest" (or in this case, last) title alphabetically. Similarly, `MIN` will give the first title alphabetically.
+
+### Fin
+* This brings us the conclusion of Lecture 0 about Querying in SQL! To exit the SQLite prompt, you can type in the SQLite keyword `.quit` and this should take you back to the regular terminal.
+* Until next time!
